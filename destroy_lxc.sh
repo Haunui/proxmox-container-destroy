@@ -3,7 +3,7 @@
 print_help() {
 cat << EOF
 USAGE
-        $0 --node-ip <node-ip> [--node-name <node-name>] --username <username> --password <password> --ct-id <container_id>
+        $0 --node-ip <node-ip> [--node-name <node-name>] --username <username> --password <password> --ct-id <container_id> --jk-node-name <jk-node-name>
 
 DESCRIPTION
         Détruire le conteneur <container_id> sur le node <node_name>
@@ -22,6 +22,9 @@ DESCRIPTION
 
         --ct-id
                 ID du conteneur
+
+        --jk-node-name
+                Supprimer le node sur Jenkins
 EOF
 
 }
@@ -61,6 +64,11 @@ while [ $# -gt 0 ]; do
                         shift
                         shift
                         ;;
+                --jk-node-name)
+                        JENKINS_NODE_NAME=$2
+                        shift
+                        shift
+                        ;;
 		*)
 			UNKNOWN_FLAG=$1
 			break
@@ -95,6 +103,12 @@ fi
 
 if [ -z "$NODE_NAME" ]; then
         NODE_NAME=proxmox
+fi
+
+
+if [ -z "$JENKINS_NODE_NAME" ]; then
+  echo "Vous devez spécifier le nom du node utilisant le conteneur sur Jenkins"
+  exit 1
 fi
 
 
@@ -144,6 +158,12 @@ done
 # DESTROY CONTAINER
 echo "Destruction du conteneur ($CONTAINER_ID) .."
 result=$(curl --silent --insecure --cookie "$(<cookie)" --header "$(<csrftoken)" -X DELETE https://$NODE_IP:8006/api2/json/nodes/$NODE_NAME/lxc/$CONTAINER_ID)
+
+
+echo "Suppression du node sur Jenkins ($JENKINS_NODE_NAME) .."
+# REMOVE NODE
+java -jar jenkins-cli.jar -s http://localhost:8080/ -auth admin:password delete-node "$JENKINS_NODE_NAME"
+
 
 rm -f csrftoken cookie &> /dev/null
 rm -rf tmp &> /dev/null
