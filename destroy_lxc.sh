@@ -160,9 +160,20 @@ echo "Destruction du conteneur ($CONTAINER_ID) .."
 result=$(curl --silent --insecure --cookie "$(<cookie)" --header "$(<csrftoken)" -X DELETE https://$NODE_IP:8006/api2/json/nodes/$NODE_NAME/lxc/$CONTAINER_ID)
 
 
+
+### GET JAR CLI FILE
+
+mkdir -p ~/bin
+
+if [ ! -f "~/bin/jenkins-cli.jar" ]; then
+	curl --silent http://localhost:8080/jnlpJars/jenkins-cli.jar -o ~/bin/jenkins-cli.jar
+	chmod 755 ~/bin/jenkins-cli.jar
+fi
+
+
 echo "Suppression du node sur Jenkins ($JENKINS_NODE_NAME) .."
 # REMOVE NODE
-java -jar jenkins-cli.jar -s http://localhost:8080/ -auth admin:password delete-node "$JENKINS_NODE_NAME"
+java -jar ~/bin/jenkins-cli.jar -s http://localhost:8080/ -auth admin:password delete-node "$JENKINS_NODE_NAME"
 
 
 rm -f csrftoken cookie &> /dev/null
